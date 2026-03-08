@@ -25,14 +25,14 @@ GPU profile expectations:
 - keeps `code` and `docs` retrieval separate, so agents can search the right corpus intentionally
 - works as a shared HTTP MCP for Codex and Claude
 - supports CPU and GPU embedding profiles without mixing incompatible collections
-- can be repointed to `vpn-server` or any other local repository through `TargetRepoPath`
+- can be repointed to any local repository through `TargetRepoPath`
 
 ## Runtime Model
 
 One running stack indexes one target repository at a time.
 
 That means:
-- open `vpn-server` and start the MCP against `C:\nullexp_vpn\vpn-server`
+- open your target repository and start the MCP against its local path
 - later switch to another project by restarting the same stack with a different `TargetRepoPath`
 
 The MCP does not auto-detect the IDE folder. The target repository is an explicit launch parameter. This is intentional because it is deterministic and works the same for Codex and Claude.
@@ -90,7 +90,7 @@ Linux/macOS:
 python3 scripts/agents/register_repo_semantic_search.py
 ```
 
-2. Build and start the GPU profile for `vpn-server`:
+2. Build and start the GPU profile for your target repository:
 
 Windows:
 
@@ -98,7 +98,7 @@ Windows:
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 Linux:
@@ -107,7 +107,7 @@ Linux:
 bash scripts/agents/ensure_repo_semantic_search.sh \
   --build \
   --profile gpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
 macOS:
@@ -116,7 +116,7 @@ macOS:
 bash scripts/agents/ensure_repo_semantic_search.sh \
   --build \
   --profile cpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
 3. Restart Codex or Claude if they were already open before MCP registration.
@@ -127,7 +127,7 @@ bash scripts/agents/ensure_repo_semantic_search.sh \
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile cpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 ### GPU primary
@@ -135,7 +135,7 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
 ```powershell
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 ### Clean restart against another repository
@@ -148,21 +148,21 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -TargetRepoPath C:\some\other\repo
 ```
 
-## Daily Flow For vpn-server
+## Daily Flow For A Target Repository
 
-If you work on `vpn-server` every day, the practical flow is:
+If you work on the same target repository every day, the practical flow is:
 
 1. start Docker Desktop
-2. if the stack was already configured for `C:\nullexp_vpn\vpn-server`, wait for it to come back
+2. if the stack was already configured for that repo path, wait for it to come back
 3. if you want an explicit readiness check, run:
 
 ```powershell
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
-4. open `vpn-server` in Codex or Claude and use the same registered MCP endpoint
+4. open that repository in Codex or Claude and use the same registered MCP endpoint
 
 ### What happens automatically
 
@@ -183,7 +183,7 @@ For those cases, rerun `ensure_repo_semantic_search.ps1` with the desired `-Targ
 Measured on the current workstation with:
 - `RTX 5060 Ti 16 GB`
 - `Qwen/Qwen3-Embedding-0.6B`
-- target repo: `C:\nullexp_vpn\vpn-server`
+- target repo: a medium-sized local repository
 
 Observed end-to-end time from clean restart to MCP ready:
 - first clean start: about `7.64 min`
@@ -195,7 +195,7 @@ Once the stack is ready, retrieval latency is much lower than startup latency. S
 
 ## Switching Between Projects
 
-If you move from `vpn-server` to another project:
+If you move from one project to another:
 
 1. restart the stack with a new `-TargetRepoPath`
 2. wait until `ensure_repo_semantic_search.ps1` reports MCP ready
@@ -285,19 +285,19 @@ This is source-available, not OSI open source. If later you want commercial use 
 - `Qdrant` data lives on a persistent Docker volume
 - `TEI` model cache also lives on a persistent Docker volume
 - one stack equals one active target repository
-- collection names include a repo-specific key, so `vpn-server` and another project do not silently share one index
+- collection names include a repo-specific key, so two different repositories do not silently share one index
 - profile and model are part of the collection name to avoid index corruption across embeddings or query formats
 
 ## Common Scenarios
 
-### I rebooted the PC and want to work on vpn-server
+### I rebooted the PC and want to work on my target repository
 
 Windows:
 
 ```powershell
 pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_search.ps1 `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 Linux:
@@ -305,7 +305,7 @@ Linux:
 ```bash
 bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
   --profile gpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
 macOS:
@@ -313,12 +313,12 @@ macOS:
 ```bash
 bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
   --profile cpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
-Wait until the script prints that MCP is ready. After that, open or continue your Codex or Claude session on `vpn-server`.
+Wait until the script prints that MCP is ready. After that, open or continue your Codex or Claude session on that repository.
 
-### I want to switch from vpn-server to another local repository
+### I want to switch from one local repository to another
 
 ```powershell
 pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_search.ps1 `
@@ -333,7 +333,7 @@ pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_s
 pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_search.ps1 `
   -Clean `
   -Profile cpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 ### I changed the MCP code itself and need a rebuild
@@ -343,7 +343,7 @@ pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_s
   -Build `
   -Clean `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 ## Next Publication Tasks

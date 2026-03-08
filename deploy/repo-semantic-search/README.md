@@ -53,7 +53,7 @@ GPU путь рассчитан на:
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile cpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 Linux/macOS shell-вариант:
@@ -62,7 +62,7 @@ Linux/macOS shell-вариант:
 bash scripts/agents/ensure_repo_semantic_search.sh \
   --build \
   --profile cpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
 Для ручного compose-запуска:
@@ -77,8 +77,8 @@ docker compose -f docker-compose.repo-semantic-search.yml --env-file .env.exampl
 Важно: один запущенный стек индексирует один target repo. Для переключения на другой
 репозиторий нужно перезапустить тот же стек с новым `-TargetRepoPath`.
 
-Коллекции теперь включают repo-specific key, поэтому `vpn-server` и любой другой
-target repo не смогут тихо делить один и тот же индекс.
+Коллекции теперь включают repo-specific key, поэтому два разных target repo
+не смогут тихо делить один и тот же индекс.
 
 ## GPU profile
 
@@ -88,7 +88,7 @@ target repo не смогут тихо делить один и тот же ин
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile gpu `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 Linux shell-вариант:
@@ -97,14 +97,14 @@ Linux shell-вариант:
 bash scripts/agents/ensure_repo_semantic_search.sh \
   --build \
   --profile gpu \
-  --target-repo-path /path/to/vpn-server
+  --target-repo-path /path/to/target-repo
 ```
 
 Этот профиль теперь основной:
 - model: `Qwen/Qwen3-Embedding-0.6B`
 - profile: `gpu_qwen3`
 
-На текущей машине cold start этого профиля до готового MCP для `vpn-server`
+На текущей машине cold start этого профиля до готового MCP для типового target repo
 составил примерно `8 минут`. Это нормальный startup budget, который нужно
 закладывать в operational flow.
 
@@ -130,7 +130,7 @@ docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile gpu-bge-m3 `
-  -TargetRepoPath C:\nullexp_vpn\vpn-server
+  -TargetRepoPath C:\path\to\target-repo
 ```
 
 Этот профиль:
@@ -223,11 +223,11 @@ python3 scripts/agents/register_repo_semantic_search.py
   используйте:
 
 ```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile cpu -TargetRepoPath C:\nullexp_vpn\vpn-server
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile cpu -TargetRepoPath C:\path\to\target-repo
 ```
 
 Для GPU-профиля:
 
 ```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile gpu -TargetRepoPath C:\nullexp_vpn\vpn-server
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile gpu -TargetRepoPath C:\path\to\target-repo
 ```

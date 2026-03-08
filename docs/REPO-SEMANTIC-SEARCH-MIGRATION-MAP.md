@@ -2,17 +2,17 @@
 
 > **Дата:** 2026-03-08
 > **Статус:** Working draft
-> **Назначение:** ручной перенос semantic MCP из `vpn-server` в отдельный репозиторий без потери рабочего состояния
+> **Назначение:** ручной перенос semantic MCP из исходного private monorepo в отдельный репозиторий без потери рабочего состояния
 
 ---
 
 ## 1) Цель миграции
 
 Вынести semantic MCP в отдельный reusable репозиторий, чтобы:
-- развивать его независимо от `vpn-server`;
+- развивать его независимо от исходного private monorepo;
 - добавить quality upgrades вне рамок текущего monorepo;
 - подготовить отдельный GitHub-репозиторий и делиться им с коллегами;
-- не тащить в generic инструмент доменные особенности `vpn-server`.
+- не тащить в generic инструмент доменные особенности исходного private monorepo.
 
 ---
 
@@ -25,7 +25,7 @@
 Причина выбора:
 - имя уже совпадает с текущим runtime/compose/server name;
 - не слишком абстрактное;
-- не завязано на `vpn-server`;
+- не завязано на исходный private monorepo;
 - удобно для GitHub-репозитория и install/run docs.
 
 ---
@@ -43,7 +43,7 @@
 ### Фаза 2: cleanup and generalization
 
 После успешного старта в новом проекте:
-- убираем `vpn-server`-специфику;
+- убираем repo-specific доменные особенности;
 - вводим profile system;
 - подготавливаем GPU profile;
 - делаем GitHub-ready документацию.
@@ -96,7 +96,7 @@
 - `docs/guides/AGENT-CONTEXT-MAINTENANCE.md`
 
 Причина:
-- это слой инструкций именно для `vpn-server`;
+- это слой инструкций именно для исходного private monorepo;
 - в новом репо нужен уже свой агентский bootstrap.
 
 ### 5.2 Unrelated scripts
@@ -110,7 +110,7 @@
 Причина:
 - это tooling для текущего monorepo и его agent-context.
 
-### 5.3 Доменные документы `vpn-server`
+### 5.3 Доменные документы source monorepo
 
 Не переносить как runtime docs:
 
@@ -263,8 +263,8 @@
 ### 9.4 Docs / wording
 
 В новом проекте заменить формулировки вида:
-- `vpn-server`
-- `repo-owned component внутри vpn-server`
+- `source private monorepo`
+- `repo-owned component внутри source monorepo`
 
 на vendor-neutral описания.
 
@@ -323,12 +323,12 @@ powershell -ExecutionPolicy Bypass -File scripts/agents/register_repo_semantic_s
 
 Миграция считается успешной, когда в новой папке:
 
-1. semantic MCP стартует без зависимости от `vpn-server`;
+1. semantic MCP стартует без зависимости от source monorepo;
 2. `index_status` показывает ненулевые `code/docs` counts;
 3. `semantic_search_code` и `semantic_search_docs` возвращают релевантные результаты;
 4. helper scripts работают;
 5. Codex и Claude могут подключиться к новому HTTP MCP;
-6. старый `vpn-server` больше не является runtime dependency для нового проекта.
+6. source monorepo больше не является runtime dependency для нового проекта.
 
 ---
 
@@ -339,7 +339,7 @@ powershell -ExecutionPolicy Bypass -File scripts/agents/register_repo_semantic_s
 1. cleanup layout
 - решить, остаёмся ли на `apps/services`, или переходим на `src/semantic_mcp`
 
-2. убрать `vpn-server`-специфику
+2. убрать source-monorepo-специфику
 - collection prefix
 - include/exclude defaults
 - wording в docs
@@ -348,7 +348,7 @@ powershell -ExecutionPolicy Bypass -File scripts/agents/register_repo_semantic_s
 - `generic`
 - `python-monorepo`
 - `docs-heavy`
-- позже, возможно, `vpn-server`
+- позже, возможно, source monorepo
 
 4. сделать GPU profile
 - отдельный TEI GPU deploy profile
