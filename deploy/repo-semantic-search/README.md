@@ -46,8 +46,26 @@ GPU путь рассчитан на:
 
 ## Быстрый запуск shared HTTP режима
 
-1. Запустить helper script напрямую.
-2. Явно указать target repo, который нужно индексировать.
+Рекомендуемый user-facing entrypoint:
+
+Windows:
+
+```powershell
+pwsh -File scripts/agents/start_repo_semantic_for_project.ps1 `
+  -RepoPath C:\path\to\target-repo
+```
+
+Linux/macOS:
+
+```bash
+bash scripts/agents/start_repo_semantic_for_project.sh \
+  --repo-path /path/to/target-repo
+```
+
+`ensure_repo_semantic_search.*` остаётся низкоуровневым helper script, если нужен
+явный контроль над `-Build`, `-Clean` или `-Profile`.
+
+Если нужен прямой вызов helper script, явно укажите target repo, который нужно индексировать.
 
 ```powershell
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `

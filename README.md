@@ -121,6 +121,33 @@ bash scripts/agents/ensure_repo_semantic_search.sh \
 
 3. Restart Codex or Claude if they were already open before MCP registration.
 
+### One-command daily start
+
+Windows:
+
+```powershell
+pwsh -File scripts/agents/start_repo_semantic_for_project.ps1 `
+  -RepoPath C:\path\to\target-repo
+```
+
+Linux/macOS:
+
+```bash
+bash scripts/agents/start_repo_semantic_for_project.sh \
+  --repo-path /path/to/target-repo
+```
+
+This command:
+- resolves the target repository path
+- builds the MCP image if it is missing
+- starts or reuses the configured profile
+- waits for MCP readiness
+- prints the current runtime status
+
+The default profile is:
+- Windows/Linux: `gpu`
+- macOS practical recommendation: pass `--profile cpu`
+
 ### CPU
 
 ```powershell
@@ -153,16 +180,14 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
 If you work on the same target repository every day, the practical flow is:
 
 1. start Docker Desktop
-2. if the stack was already configured for that repo path, wait for it to come back
-3. if you want an explicit readiness check, run:
+2. run one command:
 
 ```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
-  -Profile gpu `
-  -TargetRepoPath C:\path\to\target-repo
+pwsh -File scripts/agents/start_repo_semantic_for_project.ps1 `
+  -RepoPath C:\path\to\target-repo
 ```
 
-4. open that repository in Codex or Claude and use the same registered MCP endpoint
+3. open that repository in Codex or Claude and use the same registered MCP endpoint
 
 ### What happens automatically
 
@@ -177,6 +202,30 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
 - forcing a clean restart
 
 For those cases, rerun `ensure_repo_semantic_search.ps1` with the desired `-TargetRepoPath` or `-Profile`.
+
+## Status Command
+
+If you want a fast readiness check without restarting anything:
+
+Windows:
+
+```powershell
+pwsh -File scripts/agents/repo_semantic_status.ps1
+```
+
+Linux/macOS:
+
+```bash
+bash scripts/agents/repo_semantic_status.sh
+```
+
+It prints:
+- active `repo_root`
+- active `repo_key`
+- active `profile` and `model`
+- collection names
+- point counts
+- watcher status
 
 ## Startup Time On This Machine
 
@@ -299,25 +348,23 @@ This is source-available, not OSI open source. If later you want commercial use 
 Windows:
 
 ```powershell
-pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_search.ps1 `
-  -Profile gpu `
-  -TargetRepoPath C:\path\to\target-repo
+pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\start_repo_semantic_for_project.ps1 `
+  -RepoPath C:\path\to\target-repo
 ```
 
 Linux:
 
 ```bash
-bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
-  --profile gpu \
-  --target-repo-path /path/to/target-repo
+bash /path/to/repo-semantic-mcp/scripts/agents/start_repo_semantic_for_project.sh \
+  --repo-path /path/to/target-repo
 ```
 
 macOS:
 
 ```bash
-bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
+bash /path/to/repo-semantic-mcp/scripts/agents/start_repo_semantic_for_project.sh \
+  --repo-path /path/to/target-repo \
   --profile cpu \
-  --target-repo-path /path/to/target-repo
 ```
 
 Wait until the script prints that MCP is ready. After that, open or continue your Codex or Claude session on that repository.
