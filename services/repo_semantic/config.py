@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 import re
 
@@ -24,6 +25,14 @@ def _slugify_embedding_model(model_name: str) -> str:
     return slug or "model"
 
 
+def _repo_key(repo_root: Path) -> str:
+    """Собрать стабильный ключ репозитория из имени папки и пути."""
+
+    repo_name = re.sub(r"[^a-z0-9]+", "_", repo_root.name.strip().lower()).strip("_") or "repo"
+    digest = hashlib.sha1(str(repo_root).encode("utf-8")).hexdigest()[:8]
+    return f"{repo_name}_{digest}"
+
+
 class SemanticMcpSettings(BaseSettings):
     """Настройки semantic MCP, Qdrant и indexing pipeline."""
 
@@ -31,6 +40,7 @@ class SemanticMcpSettings(BaseSettings):
     SEMANTIC_MCP_QDRANT_URL: str = "http://qdrant:6333"
     SEMANTIC_MCP_QDRANT_API_KEY: str | None = None
     SEMANTIC_MCP_COLLECTION_PREFIX: str = "repo_semantic"
+    SEMANTIC_MCP_REPO_KEY: str | None = None
     SEMANTIC_MCP_INDEX_SCHEMA_VERSION: int = 1
 
     SEMANTIC_MCP_EMBEDDING_BACKEND: str = "tei_http"
@@ -136,7 +146,7 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для code corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.profile_slug}_"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.repo_key_slug}_{self.profile_slug}_"
             f"{self.embedding_model_slug}_code_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
@@ -146,7 +156,7 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для docs corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.profile_slug}_"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.repo_key_slug}_{self.profile_slug}_"
             f"{self.embedding_model_slug}_docs_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
@@ -162,6 +172,14 @@ class SemanticMcpSettings(BaseSettings):
         """Вернуть нормализованный slug профиля индекса."""
 
         return _slugify_embedding_model(self.SEMANTIC_MCP_PROFILE_NAME)
+
+    @property
+    def repo_key_slug(self) -> str:
+        """Вернуть стабильный ключ текущего target repo."""
+
+        if self.SEMANTIC_MCP_REPO_KEY:
+            return _slugify_embedding_model(self.SEMANTIC_MCP_REPO_KEY)
+        return _repo_key(self.repo_root)
 
     model_config = SettingsConfigDict(
         env_prefix="",

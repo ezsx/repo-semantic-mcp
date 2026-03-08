@@ -79,6 +79,7 @@ class IndexStatusResult(BaseModel):
     """Итоговый статус semantic индекса."""
 
     repo_root: str
+    repo_key: str
     index_profile: str
     embedding_backend: str
     embedding_model: str

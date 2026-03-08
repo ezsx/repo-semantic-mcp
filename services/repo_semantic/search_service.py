@@ -324,6 +324,7 @@ class SearchService:
 
         return IndexStatusResult(
             repo_root=str(self._settings.repo_root),
+            repo_key=self._settings.repo_key_slug,
             index_profile=self._embedding_provider.index_profile(),
             embedding_backend=self._embedding_provider.backend_name(),
             embedding_model=self._embedding_provider.model_name(),

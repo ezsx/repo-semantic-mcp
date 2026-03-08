@@ -34,67 +34,83 @@
 
 ## Быстрый запуск shared HTTP режима
 
-1. Скопировать `.env.example` в `.env`.
-2. Запустить стек:
+1. Запустить helper script напрямую.
+2. Явно указать target repo, который нужно индексировать.
+
+```powershell
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
+  -Build `
+  -Profile cpu `
+  -TargetRepoPath C:\nullexp_vpn\vpn-server
+```
+
+Для ручного compose-запуска:
 
 ```bash
 cd deploy/repo-semantic-search
-docker compose -f docker-compose.repo-semantic-search.yml up -d --build
+docker compose -f docker-compose.repo-semantic-search.yml --env-file .env.example up -d --build
 ```
 
-3. Дождаться первого auto-index.
-4. Проверить HTTP endpoint:
+После старта helper script ждёт готовый MCP protocol, а не только состояние контейнера.
 
-```bash
-curl http://localhost:8011/mcp
-```
+Важно: один запущенный стек индексирует один target repo. Для переключения на другой
+репозиторий нужно перезапустить тот же стек с новым `-TargetRepoPath`.
 
-Либо использовать helper script, который ждёт именно рабочий MCP protocol:
-
-```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build
-```
+Коллекции теперь включают repo-specific key, поэтому `vpn-server` и любой другой
+target repo не смогут тихо делить один и тот же индекс.
 
 ## GPU profile
 
-Для машины с NVIDIA GPU используйте отдельный override и GPU env:
+Для машины с NVIDIA GPU используйте primary GPU profile:
 
 ```powershell
-Copy-Item deploy/repo-semantic-search/.env.gpu.example deploy/repo-semantic-search/.env.gpu
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build -Gpu
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
+  -Build `
+  -Profile gpu `
+  -TargetRepoPath C:\nullexp_vpn\vpn-server
 ```
 
-Этот профиль оставляет уже проверенный baseline:
-- model: `BAAI/bge-m3`
-- profile: `gpu_bge_m3`
+Этот профиль теперь основной:
+- model: `Qwen/Qwen3-Embedding-0.6B`
+- profile: `gpu_qwen3`
+
+На текущей машине cold start этого профиля до готового MCP для `vpn-server`
+составил примерно `8 минут`. Это нормальный startup budget, который нужно
+закладывать в operational flow.
 
 Эквивалентный ручной запуск:
 
 ```bash
 cd deploy/repo-semantic-search
-docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo-semantic-search.gpu.yml up -d --build
+docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo-semantic-search.gpu.yml --env-file .env.gpu.example up -d --build
 ```
 
 Профиль рассчитан на `NVIDIA Container Toolkit` и TEI CUDA image. По официальному quick start TEI для GPU запускается через `--gpus all` и CUDA image семейства `cuda-1.9`. Источник: https://huggingface.co/docs/text-embeddings-inference/en/quick_tour
 
 Логика профилей намеренно такая:
 - CPU путь остаётся дефолтным и совместимым для коллег;
-- GPU путь opt-in и включается только через `-Gpu`;
-- helper script сначала ищет `deploy/repo-semantic-search/.env.gpu`, затем обычный `.env`.
+- GPU путь opt-in и включается только через `-Profile gpu`;
+- helper script умеет работать как с `.env*`, так и с `.env*.example`, поэтому первый запуск не требует ручного копирования env-файлов.
 
-### Qwen3 candidate profile
+### Experimental BGE-M3 profile
 
-Для сравнения более сильной GPU-модели используйте отдельный env-файл:
+Для debug/исследовательского профиля используйте:
 
 ```powershell
-Copy-Item deploy/repo-semantic-search/.env.gpu.qwen3.example deploy/repo-semantic-search/.env.gpu.qwen3
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build -Gpu -EnvFile deploy/repo-semantic-search/.env.gpu.qwen3
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
+  -Build `
+  -Profile gpu-bge-m3 `
+  -TargetRepoPath C:\nullexp_vpn\vpn-server
 ```
 
 Этот профиль:
-- model: `Qwen/Qwen3-Embedding-0.6B`
-- profile: `gpu_qwen3`
-- использует query-side instruction template без изменения MCP contract
+- model: `BAAI/bge-m3`
+- profile: `gpu_bge_m3`
+
+Он не считается официальным fallback-путём, потому что cold-start для него
+слишком дорогой. Если `Qwen3` сломан, рекомендуемый operational fallback:
+- перейти на `-Profile cpu`;
+- либо чинить `Qwen3`, а не маскировать проблему тяжёлым GPU fallback.
 
 ### Почему по умолчанию используется TEI, а не FastEmbed
 
@@ -120,8 +136,8 @@ production-like профилем.
 
 GPU profile сознательно вынесен отдельно:
 - CPU default остаётся дешёвым и стабильным после ребута;
-- GPU baseline на `BAAI/bge-m3` сохраняет уже проверенный runtime;
-- Qwen3 candidate добавляется отдельным env-профилем и не ломает baseline.
+- основной GPU profile на `Qwen3` даёт лучший текущий retrieval result;
+- `BAAI/bge-m3` сохраняется только как experimental/debug profile.
 
 ## Isolation rule
 
@@ -171,11 +187,11 @@ pwsh -File scripts/agents/register_repo_semantic_search.ps1
   используйте:
 
 ```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile cpu -TargetRepoPath C:\nullexp_vpn\vpn-server
 ```
 
 Для GPU-профиля:
 
 ```powershell
-pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Gpu
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Profile gpu -TargetRepoPath C:\nullexp_vpn\vpn-server
 ```

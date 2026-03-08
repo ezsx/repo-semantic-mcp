@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -22,7 +23,44 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--tool", default="semantic_search", choices=("semantic_search", "hybrid_search"))
     parser.add_argument("--label", default="run")
+    parser.add_argument("--wait-for-index-sec", type=int, default=0)
     return parser.parse_args()
+
+
+def _status_ready(status_payload: dict) -> bool:
+    """Проверить, что индекс не пуст и готов для benchmark."""
+
+    return bool(
+        status_payload.get("code_collection_count", 0) > 0
+        or status_payload.get("docs_collection_count", 0) > 0
+    )
+
+
+async def _wait_for_index(
+    session: ClientSession,
+    timeout_sec: int,
+) -> dict:
+    """Дождаться непустого индекса или вернуть последний статус."""
+
+    deadline = time.perf_counter() + timeout_sec
+    last_status: dict | None = None
+    last_log_ts = 0.0
+    while True:
+        result = await session.call_tool("index_status", {})
+        last_status = json.loads(result.content[0].text)
+        if _status_ready(last_status) or timeout_sec <= 0 or time.perf_counter() >= deadline:
+            return last_status
+        now = time.perf_counter()
+        if now - last_log_ts >= 10:
+            print(
+                "[benchmark] waiting for index:"
+                f" code={last_status.get('code_collection_count', 0)}"
+                f" docs={last_status.get('docs_collection_count', 0)}",
+                file=sys.stderr,
+                flush=True,
+            )
+            last_log_ts = now
+        await anyio.sleep(2)
 
 
 async def _run_benchmark(args: argparse.Namespace) -> dict:
@@ -33,8 +71,7 @@ async def _run_benchmark(args: argparse.Namespace) -> dict:
     async with streamablehttp_client(args.mcp_url) as (read_stream, write_stream, _):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            status = await session.call_tool("index_status", {})
-            report["status"] = json.loads(status.content[0].text)
+            report["status"] = await _wait_for_index(session, args.wait_for_index_sec)
 
             for query in queries:
                 start = time.perf_counter()

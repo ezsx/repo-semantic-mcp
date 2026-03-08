@@ -2,6 +2,8 @@ param(
     [switch]$Build,
     [switch]$Clean,
     [switch]$Gpu,
+    [ValidateSet("cpu", "gpu", "gpu-qwen3", "gpu-bge-m3")]
+    [string]$Profile,
     [string]$EnvFile,
     [string]$TargetRepoPath,
     [int]$TimeoutSec = 1800
@@ -51,22 +53,58 @@ anyio.run(main)
     }
 }
 
+function Resolve-ExistingPath {
+    param([string[]]$Candidates)
+
+    foreach ($candidate in $Candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\\..")
 $deployDir = Join-Path $repoRoot "deploy\\repo-semantic-search"
 $composeFile = Join-Path $repoRoot "deploy\\repo-semantic-search\\docker-compose.repo-semantic-search.yml"
 $composeGpuFile = Join-Path $repoRoot "deploy\\repo-semantic-search\\docker-compose.repo-semantic-search.gpu.yml"
 
+if (-not $Profile) {
+    $Profile = if ($Gpu) { "gpu" } else { "cpu" }
+}
+
+$useGpuCompose = $Profile -ne "cpu" -or $Gpu
+
 if (-not $EnvFile) {
-    if ($Gpu) {
-        $gpuEnv = Join-Path $deployDir ".env.gpu"
-        if (Test-Path $gpuEnv) {
-            $EnvFile = $gpuEnv
+    switch ($Profile) {
+        "cpu" {
+            $EnvFile = Resolve-ExistingPath @(
+                (Join-Path $deployDir ".env"),
+                (Join-Path $deployDir ".env.example")
+            )
         }
-    }
-    if (-not $EnvFile) {
-        $defaultEnv = Join-Path $deployDir ".env"
-        if (Test-Path $defaultEnv) {
-            $EnvFile = $defaultEnv
+        "gpu" {
+            $EnvFile = Resolve-ExistingPath @(
+                (Join-Path $deployDir ".env.gpu"),
+                (Join-Path $deployDir ".env.gpu.example"),
+                (Join-Path $deployDir ".env.gpu.qwen3"),
+                (Join-Path $deployDir ".env.gpu.qwen3.example")
+            )
+        }
+        "gpu-qwen3" {
+            $EnvFile = Resolve-ExistingPath @(
+                (Join-Path $deployDir ".env.gpu.qwen3"),
+                (Join-Path $deployDir ".env.gpu"),
+                (Join-Path $deployDir ".env.gpu.qwen3.example"),
+                (Join-Path $deployDir ".env.gpu.example")
+            )
+        }
+        "gpu-bge-m3" {
+            $EnvFile = Resolve-ExistingPath @(
+                (Join-Path $deployDir ".env.gpu.bge-m3"),
+                (Join-Path $deployDir ".env.gpu.bge-m3.example")
+            )
         }
     }
 }
@@ -80,11 +118,22 @@ if ($TargetRepoPath) {
 }
 
 $composeArgs = @("compose", "-f", $composeFile)
-if ($Gpu) {
+if ($useGpuCompose) {
     $composeArgs += @("-f", $composeGpuFile)
 }
 if ($EnvFile) {
     $composeArgs += @("--env-file", $EnvFile)
+}
+
+Write-Host "profile: $Profile"
+if ($EnvFile) {
+    Write-Host "env file: $EnvFile"
+}
+if ($TargetRepoPath) {
+    Write-Host "target repo: $resolvedTargetRepo"
+}
+else {
+    Write-Host "target repo: compose default"
 }
 
 if ($Clean) {
