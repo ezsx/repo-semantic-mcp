@@ -324,6 +324,7 @@ class SearchService:
 
         return IndexStatusResult(
             repo_root=str(self._settings.repo_root),
+            index_profile=self._embedding_provider.index_profile(),
             embedding_backend=self._embedding_provider.backend_name(),
             embedding_model=self._embedding_provider.model_name(),
             qdrant_url=self._settings.SEMANTIC_MCP_QDRANT_URL,
@@ -333,4 +334,3 @@ class SearchService:
             last_full_build_ts=self._indexer.last_full_build_ts,
             collections=collections,
         )
-

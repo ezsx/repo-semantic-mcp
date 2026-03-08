@@ -257,6 +257,7 @@ def resource_index_config() -> str:
     return _dump(
         {
             "repo_root": status["repo_root"],
+            "index_profile": status["index_profile"],
             "embedding_backend": status["embedding_backend"],
             "embedding_model": status["embedding_model"],
             "qdrant_url": status["qdrant_url"],

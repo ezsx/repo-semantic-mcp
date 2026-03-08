@@ -64,6 +64,10 @@ Copy-Item deploy/repo-semantic-search/.env.gpu.example deploy/repo-semantic-sear
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build -Gpu
 ```
 
+Этот профиль оставляет уже проверенный baseline:
+- model: `BAAI/bge-m3`
+- profile: `gpu_bge_m3`
+
 Эквивалентный ручной запуск:
 
 ```bash
@@ -77,6 +81,20 @@ docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo
 - CPU путь остаётся дефолтным и совместимым для коллег;
 - GPU путь opt-in и включается только через `-Gpu`;
 - helper script сначала ищет `deploy/repo-semantic-search/.env.gpu`, затем обычный `.env`.
+
+### Qwen3 candidate profile
+
+Для сравнения более сильной GPU-модели используйте отдельный env-файл:
+
+```powershell
+Copy-Item deploy/repo-semantic-search/.env.gpu.qwen3.example deploy/repo-semantic-search/.env.gpu.qwen3
+pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build -Gpu -EnvFile deploy/repo-semantic-search/.env.gpu.qwen3
+```
+
+Этот профиль:
+- model: `Qwen/Qwen3-Embedding-0.6B`
+- profile: `gpu_qwen3`
+- использует query-side instruction template без изменения MCP contract
 
 ### Почему по умолчанию используется TEI, а не FastEmbed
 
@@ -93,12 +111,25 @@ multilingual модель `intfloat/multilingual-e5-small`.
 - приемлемое время первой индексации на CPU;
 - сохранение архитектуры `Qdrant + separate embedding backend`.
 
+Для E5-family в CPU default query/document formatting обязателен:
+- query: `query: {query}`
+- documents: `passage: {text}`
+
 `fastembed_local` остаётся как fallback/dev-режим, но не является основным
 production-like профилем.
 
 GPU profile сознательно вынесен отдельно:
 - CPU default остаётся дешёвым и стабильным после ребута;
-- GPU override позволяет поднять целевую multilingual модель `BAAI/bge-m3` без смены MCP contract.
+- GPU baseline на `BAAI/bge-m3` сохраняет уже проверенный runtime;
+- Qwen3 candidate добавляется отдельным env-профилем и не ломает baseline.
+
+## Isolation rule
+
+Коллекции Qdrant теперь обязаны различаться не только по модели, но и по профилю.
+Это нужно, чтобы:
+- не смешивать CPU E5 и GPU embeddings;
+- не смешивать профили с разным query/document formatting;
+- безопасно сравнивать несколько моделей параллельно.
 
 ## Локальный stdio режим
 

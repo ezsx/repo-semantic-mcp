@@ -9,6 +9,10 @@ class EmbeddingProvider(ABC):
     """Абстракция над локальным или удалённым embedding backend."""
 
     @abstractmethod
+    def index_profile(self) -> str:
+        """Вернуть профиль индекса для разделения несовместимых векторных схем."""
+
+    @abstractmethod
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Преобразовать список документов в dense vectors."""
 
@@ -27,4 +31,3 @@ class EmbeddingProvider(ABC):
     @abstractmethod
     def healthcheck(self) -> None:
         """Проверить доступность backend и бросить исключение при ошибке."""
-

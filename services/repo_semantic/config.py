@@ -33,9 +33,14 @@ class SemanticMcpSettings(BaseSettings):
     SEMANTIC_MCP_COLLECTION_PREFIX: str = "repo_semantic"
     SEMANTIC_MCP_INDEX_SCHEMA_VERSION: int = 1
 
-    SEMANTIC_MCP_EMBEDDING_BACKEND: str = "fastembed_local"
-    SEMANTIC_MCP_EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    SEMANTIC_MCP_EMBEDDING_BACKEND: str = "tei_http"
+    SEMANTIC_MCP_EMBEDDING_MODEL: str = "intfloat/multilingual-e5-small"
     SEMANTIC_MCP_TEI_URL: str | None = None
+    SEMANTIC_MCP_PROFILE_NAME: str = "cpu_e5"
+    SEMANTIC_MCP_QUERY_TEMPLATE: str = "query: {query}"
+    SEMANTIC_MCP_DOCUMENT_PREFIX: str = "passage: "
+    SEMANTIC_MCP_TEI_QUERY_PROMPT_NAME: str | None = None
+    SEMANTIC_MCP_TEI_DOCUMENT_PROMPT_NAME: str | None = None
 
     SEMANTIC_MCP_TRANSPORT: str = "stdio"
     SEMANTIC_MCP_HTTP_HOST: str = "0.0.0.0"
@@ -106,6 +111,20 @@ class SemanticMcpSettings(BaseSettings):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
+    @field_validator(
+        "SEMANTIC_MCP_QUERY_TEMPLATE",
+        "SEMANTIC_MCP_DOCUMENT_PREFIX",
+        "SEMANTIC_MCP_PROFILE_NAME",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_string_fields(cls, value):
+        """Сохранить пустые строки и декодировать escaped newlines в env."""
+
+        if isinstance(value, str):
+            return value.replace("\\n", "\n")
+        return value
+
     @property
     def repo_root(self) -> Path:
         """Вернуть корень репозитория как Path."""
@@ -117,7 +136,8 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для code corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.embedding_model_slug}_code_v"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.profile_slug}_"
+            f"{self.embedding_model_slug}_code_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
 
@@ -126,7 +146,8 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для docs corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.embedding_model_slug}_docs_v"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.profile_slug}_"
+            f"{self.embedding_model_slug}_docs_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
 
@@ -136,8 +157,15 @@ class SemanticMcpSettings(BaseSettings):
 
         return _slugify_embedding_model(self.SEMANTIC_MCP_EMBEDDING_MODEL)
 
+    @property
+    def profile_slug(self) -> str:
+        """Вернуть нормализованный slug профиля индекса."""
+
+        return _slugify_embedding_model(self.SEMANTIC_MCP_PROFILE_NAME)
+
     model_config = SettingsConfigDict(
         env_prefix="",
         case_sensitive=True,
         enable_decoding=False,
+        env_ignore_empty=False,
     )

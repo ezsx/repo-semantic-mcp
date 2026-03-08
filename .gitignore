@@ -17,4 +17,5 @@ Thumbs.db
 
 deploy/repo-semantic-search/.env
 deploy/repo-semantic-search/.env.gpu
+deploy/repo-semantic-search/.env.gpu.qwen3
 deploy/repo-semantic-search/data/

@@ -79,6 +79,7 @@ class IndexStatusResult(BaseModel):
     """Итоговый статус semantic индекса."""
 
     repo_root: str
+    index_profile: str
     embedding_backend: str
     embedding_model: str
     qdrant_url: str
@@ -87,4 +88,3 @@ class IndexStatusResult(BaseModel):
     watch_running: bool
     last_full_build_ts: str | None = None
     collections: list[IndexCollectionStatus]
-
