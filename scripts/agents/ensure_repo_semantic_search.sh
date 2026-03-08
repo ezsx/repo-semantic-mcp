@@ -98,7 +98,7 @@ if [[ -z "$ENV_FILE" ]]; then
       ENV_FILE="$(resolve_existing_path "$DEPLOY_DIR/.env" "$DEPLOY_DIR/.env.example" || true)"
       ;;
     gpu)
-      ENV_FILE="$(resolve_existing_path "$DEPLOY_DIR/.env.gpu" "$DEPLOY_DIR/.env.gpu.example" "$DEPLOY_DIR/.env.gpu.qwen3" "$DEPLOY_DIR/.env.gpu.qwen3.example" || true)"
+      ENV_FILE="$(resolve_existing_path "$DEPLOY_DIR/.env.gpu.qwen3" "$DEPLOY_DIR/.env.gpu.qwen3.example" "$DEPLOY_DIR/.env.gpu" "$DEPLOY_DIR/.env.gpu.example" "$DEPLOY_DIR/.env.gpu.bge-m3" "$DEPLOY_DIR/.env.gpu.bge-m3.example" || true)"
       ;;
     gpu-qwen3)
       ENV_FILE="$(resolve_existing_path "$DEPLOY_DIR/.env.gpu.qwen3" "$DEPLOY_DIR/.env.gpu" "$DEPLOY_DIR/.env.gpu.qwen3.example" "$DEPLOY_DIR/.env.gpu.example" || true)"

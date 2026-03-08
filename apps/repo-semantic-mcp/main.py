@@ -84,6 +84,10 @@ def main() -> None:
         jlog("info", "semantic_auto_index_start")
         indexer.rebuild_index()
         search_service.invalidate_cache()
+    elif total_points > 0:
+        reconcile_result = indexer.reconcile_index()
+        if reconcile_result.get("paths", 0) > 0:
+            search_service.invalidate_cache()
 
     if watcher:
         watcher.start()

@@ -86,10 +86,12 @@ if (-not $EnvFile) {
         }
         "gpu" {
             $EnvFile = Resolve-ExistingPath @(
+                (Join-Path $deployDir ".env.gpu.qwen3"),
+                (Join-Path $deployDir ".env.gpu.qwen3.example"),
                 (Join-Path $deployDir ".env.gpu"),
                 (Join-Path $deployDir ".env.gpu.example"),
-                (Join-Path $deployDir ".env.gpu.qwen3"),
-                (Join-Path $deployDir ".env.gpu.qwen3.example")
+                (Join-Path $deployDir ".env.gpu.bge-m3"),
+                (Join-Path $deployDir ".env.gpu.bge-m3.example")
             )
         }
         "gpu-qwen3" {

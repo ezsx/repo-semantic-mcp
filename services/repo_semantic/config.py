@@ -62,6 +62,8 @@ class SemanticMcpSettings(BaseSettings):
     SEMANTIC_MCP_EMBED_BATCH_DOCS: int = 24
     SEMANTIC_MCP_EMBED_BATCH_CHARS: int = 12000
     SEMANTIC_MCP_MAX_CHUNK_CHARS: int = 800
+    SEMANTIC_MCP_QDRANT_UPSERT_BATCH_POINTS: int = 16
+    SEMANTIC_MCP_QDRANT_UPSERT_MAX_BYTES: int = 24 * 1024 * 1024
 
     SEMANTIC_MCP_INCLUDE_GLOBS: list[str] = Field(
         default_factory=lambda: [

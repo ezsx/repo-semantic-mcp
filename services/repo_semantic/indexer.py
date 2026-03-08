@@ -215,16 +215,61 @@ class RepositoryIndexer:
         jlog("info", "semantic_index_rebuilt", **result)
         return result
 
+    def reconcile_index(self) -> dict[str, int]:
+        """Сверить текущий индекс с рабочей копией и дозаписать только отличия."""
+
+        current_paths: dict[str, float] = {}
+        for path in self.iter_indexable_paths():
+            relative_path = path.relative_to(self._settings.repo_root).as_posix()
+            current_paths[relative_path] = path.stat().st_mtime
+
+        indexed_paths: dict[str, float] = {}
+        for scope in ("code", "docs"):
+            for point in self._store.scroll_chunks(scope):
+                payload = point.payload or {}
+                relative_path = payload.get("relative_path")
+                if not relative_path or relative_path in indexed_paths:
+                    continue
+                try:
+                    indexed_paths[relative_path] = float(payload.get("source_mtime") or 0.0)
+                except (TypeError, ValueError):
+                    indexed_paths[relative_path] = 0.0
+
+        touched: list[str] = []
+        for relative_path, current_mtime in current_paths.items():
+            indexed_mtime = indexed_paths.get(relative_path)
+            if indexed_mtime is None or abs(indexed_mtime - current_mtime) > 1e-6:
+                touched.append(relative_path)
+
+        for relative_path in indexed_paths:
+            if relative_path not in current_paths:
+                touched.append(relative_path)
+
+        touched = sorted(set(touched))
+        if not touched:
+            jlog("info", "semantic_index_reconcile_noop")
+            return {"paths": 0, "code": 0, "docs": 0}
+
+        result = self.reindex_paths(touched)
+        jlog(
+            "info",
+            "semantic_index_reconciled",
+            paths=len(touched),
+            code_chunks=result.get("code", 0),
+            docs_chunks=result.get("docs", 0),
+        )
+        return {"paths": len(touched), **result}
+
     def reindex_paths(self, relative_paths: list[str]) -> dict[str, int]:
         """Переиндексировать конкретные файлы по относительным путям."""
 
         affected_by_scope: dict[str, list[ChunkRecord]] = {"code": [], "docs": []}
-        touched_scopes: dict[str, set[str]] = {"code": set(), "docs": set()}
 
         for relative_path in sorted(set(path.replace("\\", "/") for path in relative_paths)):
-            likely_scope = classify_scope(relative_path)
-            touched_scopes[likely_scope].add(relative_path)
-            self._store.delete_file_chunks(likely_scope, relative_path)
+            # Удаляем во всех scope, чтобы корректно переживать перенос между code/docs
+            # и появление файлов, пока стек был остановлен.
+            for scope in ("code", "docs"):
+                self._store.delete_file_chunks(scope, relative_path)
 
             file_path = self._settings.repo_root / relative_path
             if not file_path.exists() or not file_path.is_file():
@@ -236,7 +281,6 @@ class RepositoryIndexer:
                 exclude_globs=self._settings.SEMANTIC_MCP_EXCLUDE_GLOBS,
             )
             for chunk in self._normalize_chunks(raw_chunks):
-                touched_scopes[chunk.scope].add(relative_path)
                 affected_by_scope[chunk.scope].append(chunk)
 
         result: dict[str, int] = {}

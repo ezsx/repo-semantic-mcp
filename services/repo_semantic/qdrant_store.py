@@ -8,6 +8,7 @@ from uuid import NAMESPACE_URL, uuid5
 from qdrant_client import QdrantClient, models
 
 from services.repo_semantic.config import SemanticMcpSettings
+from services.repo_semantic.logging import jlog
 from services.repo_semantic.models import ChunkRecord
 
 
@@ -83,7 +84,35 @@ class QdrantStore:
         if not chunks:
             return
 
-        points = []
+        max_points = max(1, self._settings.SEMANTIC_MCP_QDRANT_UPSERT_BATCH_POINTS)
+        max_bytes = max(1, self._settings.SEMANTIC_MCP_QDRANT_UPSERT_MAX_BYTES)
+
+        batch: list[models.PointStruct] = []
+        batch_estimated_bytes = 0
+        uploaded_points = 0
+        batch_index = 0
+        total_points = len(chunks)
+
+        def flush_batch() -> None:
+            """Отправить накопленный батч векторных точек в Qdrant."""
+
+            nonlocal batch, batch_estimated_bytes, uploaded_points, batch_index
+            if not batch:
+                return
+            batch_index += 1
+            self._client.upsert(collection_name=self.collection_name(scope), points=batch)
+            uploaded_points += len(batch)
+            jlog(
+                "info",
+                "semantic_qdrant_upsert_progress",
+                scope=scope,
+                uploaded=uploaded_points,
+                total=total_points,
+                batch_index=batch_index,
+            )
+            batch = []
+            batch_estimated_bytes = 0
+
         for chunk, vector in zip(chunks, vectors, strict=True):
             payload = {
                 "chunk_id": chunk.point_id,
@@ -105,15 +134,29 @@ class QdrantStore:
                 "index_schema_version": schema_version,
                 **chunk.extra,
             }
-            points.append(
-                models.PointStruct(
-                    id=self._point_id(chunk.point_id),
-                    vector=vector,
-                    payload=payload,
-                )
+            point = models.PointStruct(
+                id=self._point_id(chunk.point_id),
+                vector=vector,
+                payload=payload,
             )
+            estimated_point_bytes = (
+                len(chunk.text.encode("utf-8"))
+                + len(chunk.relative_path.encode("utf-8"))
+                + len(chunk.language.encode("utf-8"))
+                + len(chunk.chunk_type.encode("utf-8"))
+                + sum(len(tag.encode("utf-8")) for tag in chunk.domain_tags)
+                + len(vector) * 16
+                + 2048
+            )
+            if batch and (
+                len(batch) >= max_points
+                or batch_estimated_bytes + estimated_point_bytes > max_bytes
+            ):
+                flush_batch()
+            batch.append(point)
+            batch_estimated_bytes += estimated_point_bytes
 
-        self._client.upsert(collection_name=self.collection_name(scope), points=points)
+        flush_batch()
 
     def search(self, scope: str, query_vector: list[float], limit: int):
         """Выполнить dense search по scope collection."""
