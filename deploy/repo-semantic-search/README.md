@@ -60,7 +60,7 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build
 Для машины с NVIDIA GPU используйте отдельный override и GPU env:
 
 ```powershell
-Copy-Item .env.gpu.example .env
+Copy-Item deploy/repo-semantic-search/.env.gpu.example deploy/repo-semantic-search/.env.gpu
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 -Build -Gpu
 ```
 
@@ -72,6 +72,11 @@ docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo
 ```
 
 Профиль рассчитан на `NVIDIA Container Toolkit` и TEI CUDA image. По официальному quick start TEI для GPU запускается через `--gpus all` и CUDA image семейства `cuda-1.9`. Источник: https://huggingface.co/docs/text-embeddings-inference/en/quick_tour
+
+Логика профилей намеренно такая:
+- CPU путь остаётся дефолтным и совместимым для коллег;
+- GPU путь opt-in и включается только через `-Gpu`;
+- helper script сначала ищет `deploy/repo-semantic-search/.env.gpu`, затем обычный `.env`.
 
 ### Почему по умолчанию используется TEI, а не FastEmbed
 
@@ -93,7 +98,7 @@ production-like профилем.
 
 GPU profile сознательно вынесен отдельно:
 - CPU default остаётся дешёвым и стабильным после ребута;
-- GPU override позволяет позже поднять более тяжёлую multilingual модель без смены MCP contract.
+- GPU override позволяет поднять целевую multilingual модель `BAAI/bge-m3` без смены MCP contract.
 
 ## Локальный stdio режим
 

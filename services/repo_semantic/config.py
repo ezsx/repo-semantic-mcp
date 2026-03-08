@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -12,6 +13,15 @@ def _default_repo_root() -> str:
     """Вернуть корень репозитория из расположения текущего файла."""
 
     return str(Path(__file__).resolve().parents[2])
+
+
+def _slugify_embedding_model(model_name: str) -> str:
+    """Преобразовать имя embedding модели в короткий slug для имен коллекций."""
+
+    raw = model_name.strip().lower()
+    tail = raw.split("/")[-1]
+    slug = re.sub(r"[^a-z0-9]+", "_", tail).strip("_")
+    return slug or "model"
 
 
 class SemanticMcpSettings(BaseSettings):
@@ -107,7 +117,7 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для code corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_code_v"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.embedding_model_slug}_code_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
 
@@ -116,9 +126,15 @@ class SemanticMcpSettings(BaseSettings):
         """Имя коллекции для docs corpus."""
 
         return (
-            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_docs_v"
+            f"{self.SEMANTIC_MCP_COLLECTION_PREFIX}_{self.embedding_model_slug}_docs_v"
             f"{self.SEMANTIC_MCP_INDEX_SCHEMA_VERSION}"
         )
+
+    @property
+    def embedding_model_slug(self) -> str:
+        """Вернуть нормализованный slug embedding модели."""
+
+        return _slugify_embedding_model(self.SEMANTIC_MCP_EMBEDDING_MODEL)
 
     model_config = SettingsConfigDict(
         env_prefix="",

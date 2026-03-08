@@ -16,4 +16,5 @@ venv/
 Thumbs.db
 
 deploy/repo-semantic-search/.env
+deploy/repo-semantic-search/.env.gpu
 deploy/repo-semantic-search/data/

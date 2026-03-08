@@ -1,6 +1,7 @@
 param(
     [switch]$Build,
     [switch]$Gpu,
+    [string]$EnvFile,
     [int]$TimeoutSec = 1800
 )
 
@@ -49,14 +50,33 @@ anyio.run(main)
 }
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\\..")
+$deployDir = Join-Path $repoRoot "deploy\\repo-semantic-search"
 $composeFile = Join-Path $repoRoot "deploy\\repo-semantic-search\\docker-compose.repo-semantic-search.yml"
 $composeGpuFile = Join-Path $repoRoot "deploy\\repo-semantic-search\\docker-compose.repo-semantic-search.gpu.yml"
+
+if (-not $EnvFile) {
+    if ($Gpu) {
+        $gpuEnv = Join-Path $deployDir ".env.gpu"
+        if (Test-Path $gpuEnv) {
+            $EnvFile = $gpuEnv
+        }
+    }
+    if (-not $EnvFile) {
+        $defaultEnv = Join-Path $deployDir ".env"
+        if (Test-Path $defaultEnv) {
+            $EnvFile = $defaultEnv
+        }
+    }
+}
 
 Wait-DockerReady -TimeoutSec 120
 
 $composeArgs = @("compose", "-f", $composeFile)
 if ($Gpu) {
     $composeArgs += @("-f", $composeGpuFile)
+}
+if ($EnvFile) {
+    $composeArgs += @("--env-file", $EnvFile)
 }
 $composeArgs += @("up", "-d")
 if ($Build) {

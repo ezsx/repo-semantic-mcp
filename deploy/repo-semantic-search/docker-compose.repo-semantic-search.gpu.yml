@@ -4,7 +4,7 @@ services:
     gpus: all
     command:
       - "--model-id"
-      - "${SEMANTIC_MCP_TEI_MODEL_ID:-intfloat/multilingual-e5-base}"
+      - "${SEMANTIC_MCP_TEI_MODEL_ID:-BAAI/bge-m3}"
       - "--port"
       - "80"
       - "--dtype"
