@@ -1,0 +1,11 @@
+services:
+  tei:
+    image: ${SEMANTIC_MCP_TEI_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cuda-1.9}
+    gpus: all
+    command:
+      - "--model-id"
+      - "${SEMANTIC_MCP_TEI_MODEL_ID:-intfloat/multilingual-e5-base}"
+      - "--port"
+      - "80"
+      - "--dtype"
+      - "${SEMANTIC_MCP_TEI_DTYPE:-float16}"
