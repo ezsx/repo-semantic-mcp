@@ -104,9 +104,23 @@ bash scripts/agents/ensure_repo_semantic_search.sh \
 - model: `Qwen/Qwen3-Embedding-0.6B`
 - profile: `gpu_qwen3`
 
-На текущей машине cold start этого профиля до готового MCP для типового target repo
-составил примерно `8 минут`. Это нормальный startup budget, который нужно
-закладывать в operational flow.
+Для RTX 50xx / Blackwell профиль должен использовать architecture-specific TEI image:
+- `ghcr.io/huggingface/text-embeddings-inference:120-1.9`
+
+Warmup также ограничен более реалистичным batching budget:
+- `SEMANTIC_MCP_TEI_MAX_BATCH_TOKENS=4096`
+- `SEMANTIC_MCP_TEI_MAX_CONCURRENT_REQUESTS=64`
+
+Это сделано специально, чтобы не платить дефолтный жирный GPU warmup на `16384` токенов
+при локальном repo-search workload.
+
+На текущей машине после перехода на `120-1.9` и более дешёвого warmup budget
+cold start этого профиля до готового MCP занимает примерно:
+- `~2.5 мин` для первого clean start после смены image/runtime;
+- `~1.5 мин` для повторного clean restart на том же профиле.
+
+То есть bottleneck теперь сидит в TEI/Qwen3 warmup, но уже не выглядит как
+неприемлемые `7-8 минут`.
 
 Эквивалентный ручной запуск:
 
@@ -115,7 +129,8 @@ cd deploy/repo-semantic-search
 docker compose -f docker-compose.repo-semantic-search.yml -f docker-compose.repo-semantic-search.gpu.yml --env-file .env.gpu.example up -d --build
 ```
 
-Профиль рассчитан на `NVIDIA Container Toolkit` и TEI CUDA image. По официальному quick start TEI для GPU запускается через `--gpus all` и CUDA image семейства `cuda-1.9`. Источник: https://huggingface.co/docs/text-embeddings-inference/en/quick_tour
+Профиль рассчитан на `NVIDIA Container Toolkit` и TEI image, соответствующий compute capability GPU.
+Для RTX 50xx используйте ветку `120-1.9`, а не generic `cuda-*` tag.
 
 Логика профилей намеренно такая:
 - CPU путь остаётся дефолтным и совместимым для коллег;
@@ -191,6 +206,8 @@ py -3.12 apps/repo-semantic-mcp/main.py
 - `Qdrant` должен жить на persistent volume.
 - `TEI` также должен жить с persistent cache volume, иначе после очистки docker volume
   модель будет скачиваться заново.
+- Для RTX 50xx / Blackwell не используйте generic `cuda-*` image как основной путь.
+  Практический default для этого класса карт: `120-1.9`.
 - `SEMANTIC_MCP_AUTO_INDEX_ON_START=1` подходит для первого rollout и локальной машины.
 - Для shared deployment при большом индексе можно выключить auto-index и запускать rebuild отдельно через tool.
 - Если используется `tei_http`, сам TEI сервис нужно поднимать отдельным контейнером и указывать его URL через `SEMANTIC_MCP_TEI_URL`.

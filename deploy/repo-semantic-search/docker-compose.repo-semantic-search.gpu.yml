@@ -1,6 +1,6 @@
 services:
   tei:
-    image: ${SEMANTIC_MCP_TEI_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cuda-1.9}
+    image: ${SEMANTIC_MCP_TEI_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:120-1.9}
     gpus: all
     command:
       - "--model-id"
@@ -9,3 +9,7 @@ services:
       - "80"
       - "--dtype"
       - "${SEMANTIC_MCP_TEI_DTYPE:-float16}"
+      - "--max-batch-tokens"
+      - "${SEMANTIC_MCP_TEI_MAX_BATCH_TOKENS:-4096}"
+      - "--max-concurrent-requests"
+      - "${SEMANTIC_MCP_TEI_MAX_CONCURRENT_REQUESTS:-64}"

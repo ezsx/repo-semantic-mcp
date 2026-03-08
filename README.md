@@ -186,10 +186,14 @@ Measured on the current workstation with:
 - target repo: a medium-sized local repository
 
 Observed end-to-end time from clean restart to MCP ready:
-- first clean start: about `7.64 min`
-- repeated clean start on the same repo/profile: about `7.81 min`
+- first clean start after switching to `120-1.9`: about `2.5 min`
+- repeated clean restart on the same repo/profile: about `1.5 min`
 
-Operationally, treat `Qwen3` startup as roughly `8 minutes` before the MCP is ready to answer queries.
+This profile now assumes:
+- TEI image: `ghcr.io/huggingface/text-embeddings-inference:120-1.9`
+- warmup budget: `SEMANTIC_MCP_TEI_MAX_BATCH_TOKENS=4096`
+
+Operationally, treat `Qwen3` startup as roughly `1.5-2.5 minutes` on this machine.
 
 Once the stack is ready, retrieval latency is much lower than startup latency. Startup is the expensive phase.
 
