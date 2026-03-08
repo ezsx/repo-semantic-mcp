@@ -9,6 +9,17 @@ Standalone semantic MCP for repository search with:
 
 The runtime is container-first and intended to be reusable across repositories. The MCP server itself stays stable; you point it at the repository you want to index.
 
+## Platform Support
+
+- Windows: supported, including the main documented path
+- Ubuntu/Linux: supported
+- macOS: supported for CPU profile
+
+GPU profile expectations:
+- Windows: supported when Docker GPU passthrough works
+- Linux: supported with NVIDIA Container Toolkit
+- macOS: CPU only; no CUDA TEI path
+
 ## What It Solves
 
 - keeps `code` and `docs` retrieval separate, so agents can search the right corpus intentionally
@@ -67,17 +78,45 @@ This is slower but operationally predictable.
 
 1. Register the MCP once:
 
+Windows:
+
 ```powershell
 pwsh -File scripts/agents/register_repo_semantic_search.ps1
 ```
 
+Linux/macOS:
+
+```bash
+python3 scripts/agents/register_repo_semantic_search.py
+```
+
 2. Build and start the GPU profile for `vpn-server`:
+
+Windows:
 
 ```powershell
 pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile gpu `
   -TargetRepoPath C:\nullexp_vpn\vpn-server
+```
+
+Linux:
+
+```bash
+bash scripts/agents/ensure_repo_semantic_search.sh \
+  --build \
+  --profile gpu \
+  --target-repo-path /path/to/vpn-server
+```
+
+macOS:
+
+```bash
+bash scripts/agents/ensure_repo_semantic_search.sh \
+  --build \
+  --profile cpu \
+  --target-repo-path /path/to/vpn-server
 ```
 
 3. Restart Codex or Claude if they were already open before MCP registration.
@@ -182,6 +221,8 @@ After registration:
 
 For Claude, this is practical because the integration is URL-based. You only need to restart the MCP stack when changing target repos, not reconfigure Claude each time.
 
+Both Codex and Claude use the same registered URL-based MCP endpoint on all supported platforms.
+
 ## Concurrency
 
 The MCP is a shared HTTP service. Codex and Claude can both hit the same endpoint.
@@ -234,7 +275,7 @@ This is source-available, not OSI open source. If later you want commercial use 
 - `apps/repo-semantic-mcp/` - MCP entrypoint and image build inputs
 - `services/repo_semantic/` - indexer, chunkers, embeddings, search, Qdrant integration
 - `deploy/repo-semantic-search/` - compose stack and env contract
-- `scripts/agents/` - startup and registration helpers
+- `scripts/agents/` - startup and registration helpers for PowerShell, Bash, and Python registration
 - `scripts/benchmark/` - profile comparison and retrieval benchmark tools
 - `docs/` - specifications and migration notes
 
@@ -251,10 +292,28 @@ This is source-available, not OSI open source. If later you want commercial use 
 
 ### I rebooted the PC and want to work on vpn-server
 
+Windows:
+
 ```powershell
 pwsh -File C:\cursor_mcp\repo-semantic-mcp\scripts\agents\ensure_repo_semantic_search.ps1 `
   -Profile gpu `
   -TargetRepoPath C:\nullexp_vpn\vpn-server
+```
+
+Linux:
+
+```bash
+bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
+  --profile gpu \
+  --target-repo-path /path/to/vpn-server
+```
+
+macOS:
+
+```bash
+bash /path/to/repo-semantic-mcp/scripts/agents/ensure_repo_semantic_search.sh \
+  --profile cpu \
+  --target-repo-path /path/to/vpn-server
 ```
 
 Wait until the script prints that MCP is ready. After that, open or continue your Codex or Claude session on `vpn-server`.

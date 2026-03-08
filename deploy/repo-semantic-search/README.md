@@ -14,6 +14,18 @@
 Это сделано намеренно: агент должен явно понимать, что он ищет по коду или по документации,
 а не всегда бить в один смешанный корпус.
 
+## Поддержка платформ
+
+- Windows: основной documented path
+- Ubuntu/Linux: поддерживается
+- macOS: поддерживается только CPU profile
+
+GPU путь рассчитан на:
+- Windows с рабочим Docker GPU passthrough
+- Linux с `NVIDIA Container Toolkit`
+
+На macOS использовать только `-Profile cpu`.
+
 ## Что входит в `docs` collection
 
 По умолчанию в `docs` коллекцию попадают:
@@ -44,6 +56,15 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -TargetRepoPath C:\nullexp_vpn\vpn-server
 ```
 
+Linux/macOS shell-вариант:
+
+```bash
+bash scripts/agents/ensure_repo_semantic_search.sh \
+  --build \
+  --profile cpu \
+  --target-repo-path /path/to/vpn-server
+```
+
 Для ручного compose-запуска:
 
 ```bash
@@ -68,6 +89,15 @@ pwsh -File scripts/agents/ensure_repo_semantic_search.ps1 `
   -Build `
   -Profile gpu `
   -TargetRepoPath C:\nullexp_vpn\vpn-server
+```
+
+Linux shell-вариант:
+
+```bash
+bash scripts/agents/ensure_repo_semantic_search.sh \
+  --build \
+  --profile gpu \
+  --target-repo-path /path/to/vpn-server
 ```
 
 Этот профиль теперь основной:
@@ -178,6 +208,12 @@ pwsh -File scripts/agents/register_repo_semantic_search.ps1
 Скрипт обновляет:
 - `%USERPROFILE%\.codex\config.toml`
 - `%USERPROFILE%\.claude.json`
+
+Кроссплатформенный вариант:
+
+```bash
+python3 scripts/agents/register_repo_semantic_search.py
+```
 
 ## Поведение после ребута машины
 
