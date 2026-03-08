@@ -1,7 +1,9 @@
 param(
     [switch]$Build,
+    [switch]$Clean,
     [switch]$Gpu,
     [string]$EnvFile,
+    [string]$TargetRepoPath,
     [int]$TimeoutSec = 1800
 )
 
@@ -71,6 +73,12 @@ if (-not $EnvFile) {
 
 Wait-DockerReady -TimeoutSec 120
 
+if ($TargetRepoPath) {
+    $resolvedTargetRepo = (Resolve-Path $TargetRepoPath).Path
+    $env:SEMANTIC_MCP_TARGET_REPO_PATH = $resolvedTargetRepo
+    $env:SEMANTIC_MCP_REPO_ROOT = "/target_repo"
+}
+
 $composeArgs = @("compose", "-f", $composeFile)
 if ($Gpu) {
     $composeArgs += @("-f", $composeGpuFile)
@@ -78,6 +86,11 @@ if ($Gpu) {
 if ($EnvFile) {
     $composeArgs += @("--env-file", $EnvFile)
 }
+
+if ($Clean) {
+    docker @($composeArgs + @("down", "--remove-orphans")) | Out-Host
+}
+
 $composeArgs += @("up", "-d")
 if ($Build) {
     $composeArgs += "--build"

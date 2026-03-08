@@ -37,10 +37,10 @@ services:
       - qdrant
       - tei
     volumes:
-      - ../..:/repo
+      - "${SEMANTIC_MCP_TARGET_REPO_PATH:-../..}:/target_repo"
     environment:
       PYTHONPATH: /repo:/repo/libs
-      SEMANTIC_MCP_REPO_ROOT: /repo
+      SEMANTIC_MCP_REPO_ROOT: "${SEMANTIC_MCP_REPO_ROOT:-/target_repo}"
       SEMANTIC_MCP_QDRANT_URL: http://qdrant:6333
       SEMANTIC_MCP_COLLECTION_PREFIX: "${SEMANTIC_MCP_COLLECTION_PREFIX:-repo_semantic}"
       SEMANTIC_MCP_INDEX_SCHEMA_VERSION: "${SEMANTIC_MCP_INDEX_SCHEMA_VERSION:-1}"

@@ -1,0 +1,40 @@
+[
+  {
+    "name": "collection_naming",
+    "query": "where qdrant collections are named based on model and profile",
+    "expected_any": [
+      "services/repo_semantic/config.py"
+    ]
+  },
+  {
+    "name": "tei_prompting",
+    "query": "where TEI embedding provider formats query prompt and document prefix",
+    "expected_any": [
+      "services/repo_semantic/embeddings/tei.py"
+    ]
+  },
+  {
+    "name": "mcp_registration",
+    "query": "where semantic mcp registers Codex and Claude configs",
+    "expected_any": [
+      "scripts/agents/register_repo_semantic_search.ps1"
+    ]
+  },
+  {
+    "name": "gpu_qwen3_docs",
+    "query": "where qwen3 gpu profile strategy is documented",
+    "expected_any": [
+      "docs/P1.Y-EMBEDDING-PROFILES-AND-MODEL-STRATEGY.md",
+      "deploy/repo-semantic-search/README.md"
+    ]
+  },
+  {
+    "name": "index_status_profile",
+    "query": "where index status exposes current profile and model collections",
+    "expected_any": [
+      "services/repo_semantic/search_service.py",
+      "services/repo_semantic/models.py",
+      "services/repo_semantic/mcp_server.py"
+    ]
+  }
+]
