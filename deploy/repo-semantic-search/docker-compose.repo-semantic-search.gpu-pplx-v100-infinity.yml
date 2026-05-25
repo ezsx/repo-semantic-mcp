@@ -1,0 +1,45 @@
+services:
+  tei:
+    build:
+      context: ../..
+      dockerfile: deploy/repo-semantic-search/Dockerfile.infinity-pplx-v100
+    image: repo-semantic-infinity-pplx-v100:local
+    container_name: repo-semantic-infinity-pplx-v100
+    gpus:
+      - driver: nvidia
+        device_ids:
+          - "${SEMANTIC_MCP_NVIDIA_VISIBLE_DEVICES:-GPU-8477a2fc-854e-0f8a-d878-75b28f274207}"
+        capabilities:
+          - gpu
+    environment:
+      HF_HOME: /data
+      HUGGINGFACE_HUB_CACHE: /data
+      DO_NOT_TRACK: "1"
+      NVIDIA_VISIBLE_DEVICES: "${SEMANTIC_MCP_NVIDIA_VISIBLE_DEVICES:-GPU-8477a2fc-854e-0f8a-d878-75b28f274207}"
+      CUDA_VISIBLE_DEVICES: "${SEMANTIC_MCP_CUDA_VISIBLE_DEVICES:-0}"
+    volumes:
+      - tei_repo_semantic_cache:/data
+      - "${SEMANTIC_MCP_INFINITY_MODEL_HOST_PATH:-C:/llms/models/pplx-embed-v1-0.6B}:/models/pplx-embed-v1-0.6B:ro"
+    ports:
+      - "${SEMANTIC_MCP_TEI_PORT:-8084}:80"
+    entrypoint:
+      - infinity_emb
+    command:
+      - v2
+      - --model-id
+      - /models/pplx-embed-v1-0.6B
+      - --served-model-name
+      - "${SEMANTIC_MCP_INFINITY_SERVED_MODEL_NAME:-pplx-embed-v1}"
+      - --engine
+      - torch
+      - --device
+      - cuda
+      - --dtype
+      - "${SEMANTIC_MCP_INFINITY_DTYPE:-float16}"
+      - --no-model-warmup
+      - --url-prefix
+      - /v1
+      - --port
+      - "80"
+      - --host
+      - 0.0.0.0

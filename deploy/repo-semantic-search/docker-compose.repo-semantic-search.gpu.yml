@@ -1,0 +1,25 @@
+services:
+  tei:
+    image: ${SEMANTIC_MCP_TEI_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:120-1.9}
+    gpus: all
+    environment:
+      HF_HOME: /data
+      HUGGINGFACE_HUB_CACHE: /data
+      NVIDIA_VISIBLE_DEVICES: "${SEMANTIC_MCP_NVIDIA_VISIBLE_DEVICES:-all}"
+      CUDA_VISIBLE_DEVICES: "${SEMANTIC_MCP_CUDA_VISIBLE_DEVICES:-}"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+    command:
+      - "--model-id"
+      - "${SEMANTIC_MCP_TEI_MODEL_ID:-BAAI/bge-m3}"
+      - "--port"
+      - "80"
+      - "--dtype"
+      - "${SEMANTIC_MCP_TEI_DTYPE:-float16}"
+      - "--max-batch-tokens"
+      - "${SEMANTIC_MCP_TEI_MAX_BATCH_TOKENS:-4096}"
+      - "--max-concurrent-requests"
+      - "${SEMANTIC_MCP_TEI_MAX_CONCURRENT_REQUESTS:-64}"
+
+  repo-semantic-mcp:
+    environment:
+      SEMANTIC_MCP_INCLUDE_GLOBS: "${SEMANTIC_MCP_INCLUDE_GLOBS:-auto}"

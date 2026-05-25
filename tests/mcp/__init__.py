@@ -1,0 +1,1 @@
+"""MCP facade contract tests."""

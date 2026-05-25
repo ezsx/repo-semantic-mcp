@@ -1,0 +1,1 @@
+"""Public contract characterization tests."""

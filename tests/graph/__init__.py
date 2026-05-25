@@ -1,0 +1,1 @@
+"""Graph artifact tests."""
